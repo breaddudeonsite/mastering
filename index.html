@@ -142,7 +142,8 @@ small{color:var(--mute)}
   <canvas id="spec" width="600" height="300"></canvas>
   <div class="legend"><span><i style="background:#8a93a6"></i>Original</span><span><i style="background:#ffb347"></i>Mastered</span><span id="legT"><i style="background:#5ad19a"></i>Target</span></div>
   <div id="report"></div>
-  <div style="margin-top:14px"><button class="primary" id="save">Save / share WAV</button></div>
+  <div style="margin-top:14px"><button class="primary" id="save">Download WAV</button></div>
+  <div style="margin-top:8px"><button id="share" style="width:100%">Share…</button></div>
 </section>
 </main>
 
@@ -574,10 +575,16 @@ function showResult(){
   $('#r1l').textContent=fmtL(state.outStats.l);$('#r1p').textContent=fmtP(state.outStats.p);
   drawWave();drawSpec();renderReport();ui();loop();$('#res').scrollIntoView({behavior:'smooth',block:'start'});
 }
-$('#save').onclick=async()=>{
-  const name=(state.file.name.replace(/\.[^.]+$/,'')||'track')+'_master.wav',f=new File([state.outBlob],name,{type:'audio/wav'});
-  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name==='AbortError')return}}
-  const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4e4);
+const outFile=()=>new File([state.outBlob],(state.file.name.replace(/\.[^.]+$/,'')||'track')+'_master.wav',{type:'audio/wav'});
+$('#save').onclick=()=>{
+  const f=outFile(),a=document.createElement('a');
+  a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),6e4);
+};
+$('#share').onclick=async()=>{
+  const f=outFile();
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]})}catch(e){}}
+  else msg('Sharing files is not supported here. Use Download.',true);
 };
 
 /* settings */
