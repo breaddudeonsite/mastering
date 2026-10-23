@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0f14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Master</title>
+<style>
+:root{--bg:#0d0f14;--card:#161a22;--line:#262c38;--tx:#e8ebf2;--mute:#8a93a6;--acc:#ffb347;--acc2:#ff7a45;--ok:#5ad19a;--bad:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top) 16px calc(40px + env(safe-area-inset-bottom))}
+main{max-width:560px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 10px}
+h1{font-size:22px;margin:0;letter-spacing:.3px}
+h1 span{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mute);margin:0 0 12px;font-weight:600}
+button,select,input{font:inherit;color:inherit}
+button{background:#232a37;border:1px solid var(--line);border-radius:12px;padding:11px 16px;cursor:pointer}
+button:active{transform:scale(.98)}
+button.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#1a1206;border:0;font-weight:700;width:100%;padding:14px;font-size:17px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.icon{padding:8px 12px}
+.drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:26px 12px;text-align:center;color:var(--mute);cursor:pointer}
+.drop.over{border-color:var(--acc);color:var(--tx)}
+.drop b{color:var(--tx)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#0f131a;border:1px solid var(--line);border-radius:12px;padding:3px;margin-bottom:14px}
+.seg button{border:0;background:transparent;border-radius:9px}
+.seg button.on{background:#262e3d;color:var(--acc);font-weight:600}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}
+.row label{color:var(--mute);font-size:14px}
+.row output{font-variant-numeric:tabular-nums;min-width:62px;text-align:right}
+input[type=range]{width:100%;accent-color:var(--acc)}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--acc)}
+select{background:#0f131a;border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chips button{padding:6px 12px;font-size:13px;border-radius:20px}
+.hide{display:none!important}
+.bar{height:8px;background:#0f131a;border-radius:6px;overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .25s}
+.msg{margin-top:10px;font-size:14px;color:var(--mute);min-height:20px}
+.msg.err{color:var(--bad)}
+canvas{width:100%;display:block;background:#0f131a;border-radius:10px}
+#wave{height:84px}#spec{height:150px;margin-top:10px}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.ab button.on{background:var(--acc);color:#1a1206;font-weight:700;border:0}
+.tp{display:flex;align-items:center;gap:10px;margin:8px 0}
+.tp span{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;min-width:40px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+td,th{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{color:var(--mute);font-weight:500}td:first-child,th:first-child{text-align:left;color:var(--mute)}
+dialog{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:16px;width:min(92vw,460px);padding:18px}
+dialog::backdrop{background:#000a}
+dialog input[type=text],dialog input[type=password]{width:100%;background:#0f131a;border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0 12px}
+small{color:var(--mute)}
+#report{font-size:13px;color:var(--mute);margin-top:12px;line-height:1.55}
+#report b{color:var(--tx);font-weight:600}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mute);margin-top:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:3px;margin-right:5px;vertical-align:middle;border-radius:2px}
+</style>
+</head>
+<body>
+<main>
+<header><h1>Master<span>.</span></h1><button class="icon" id="gear" aria-label="Settings">⚙︎</button></header>
+
+<section class="card">
+  <h2>1 · Track</h2>
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="audio/*,.wav,.flac,.mp3,.m4a,.aiff" hidden>
+    <span id="dropTxt"><b>Choose a file</b> or drop it here<br><small>WAV / FLAC / MP3 / M4A</small></span>
+  </label>
+  <table id="srcStats" class="hide"><tr><th></th><th>Loudness</th><th>True peak</th><th>Length</th></tr>
+    <tr><td>Original</td><td id="s0l"></td><td id="s0p"></td><td id="s0d"></td></tr></table>
+</section>
+
+<section class="card">
+  <h2>2 · Mastering</h2>
+  <div class="seg">
+    <button id="eLocal" class="on">On-device</button>
+    <button id="eCloud">Cloud API</button>
+  </div>
+
+  <div class="row" style="margin-bottom:0"><label>Target loudness</label><output id="tgtO">-14.0 LUFS</output></div>
+  <input type="range" id="tgt" min="-20" max="-6" step="0.5" value="-14">
+  <div class="chips" id="chips">
+    <button data-v="-14">Spotify / YouTube −14</button><button data-v="-16">Apple −16</button><button data-v="-11">Loud −11</button><button data-v="-9">Club −9</button>
+  </div>
+
+  <div class="row" style="margin-bottom:0"><label>True-peak ceiling</label><output id="ceilO">-1.0 dBTP</output></div>
+  <input type="range" id="ceil" min="-3" max="-0.1" step="0.1" value="-1">
+
+  <div id="localOpts">
+    <div class="row"><label>Tone target</label>
+      <select id="tone">
+        <option value="balanced">Balanced (modern)</option>
+        <option value="warm">Warm</option>
+        <option value="bright">Bright &amp; airy</option>
+        <option value="bass">Bass-heavy</option>
+        <option value="ref">Match a reference track</option>
+      </select></div>
+    <div id="refRow" class="hide">
+      <label class="drop" style="padding:14px 10px;margin-bottom:8px">
+        <input type="file" id="refFile" accept="audio/*,.wav,.flac,.mp3,.m4a,.aiff" hidden>
+        <span id="refTxt"><b>Choose a reference track</b><br><small>A finished song whose sound you want to match</small></span>
+      </label>
+      <div class="row"><label>Also match its loudness</label><input type="checkbox" id="refLoud"></div>
+    </div>
+    <div class="row" style="margin-bottom:0"><label>Auto-EQ amount</label><output id="eqO">60%</output></div>
+    <input type="range" id="eqStr" min="0" max="100" step="5" value="60">
+    <div class="row" style="margin-bottom:0"><label>Multiband dynamics</label><output id="dynO">100%</output></div>
+    <input type="range" id="dyn" min="0" max="150" step="5" value="100">
+    <div class="row" style="margin-bottom:0"><label>Stereo width (mids/highs)</label><output id="widO">100%</output></div>
+    <input type="range" id="width" min="60" max="140" step="5" value="100">
+    <div class="row"><label>Mono bass below 140 Hz</label><input type="checkbox" id="monoBass" checked></div>
+  </div>
+
+  <div id="cloudOpts" class="hide">
+    <div class="row"><label>Auto EQ / high-pass (speech-tuned, off for most music)</label><input type="checkbox" id="autoeq"></div>
+    <small>Cloud uses your own Edge Function. Set its URL and key in ⚙︎.</small>
+  </div>
+
+  <div class="row"><label>Export bit depth</label>
+    <select id="bits"><option value="24">24-bit</option><option value="16">16-bit (dithered)</option></select></div>
+
+  <button class="primary" id="go" disabled>Master it</button>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="msg" id="msg"></div>
+</section>
+
+<section class="card hide" id="res">
+  <h2>3 · Result</h2>
+  <canvas id="wave" width="600" height="168"></canvas>
+  <div class="ab"><button id="bA">Original</button><button id="bB" class="on">Mastered</button></div>
+  <div class="tp"><button id="play" class="icon">▶︎</button><input type="range" id="seek" min="0" max="1000" value="0"><span id="time">0:00</span></div>
+  <div class="row"><label>Match loudness for fair A/B</label><input type="checkbox" id="match" checked></div>
+  <table><tr><th></th><th>Loudness</th><th>True peak</th></tr>
+    <tr><td>Original</td><td id="r0l"></td><td id="r0p"></td></tr>
+    <tr><td>Mastered</td><td id="r1l"></td><td id="r1p"></td></tr></table>
+  <canvas id="spec" width="600" height="300"></canvas>
+  <div class="legend"><span><i style="background:#8a93a6"></i>Original</span><span><i style="background:#ffb347"></i>Mastered</span><span id="legT"><i style="background:#5ad19a"></i>Target</span></div>
+  <div id="report"></div>
+  <div style="margin-top:14px"><button class="primary" id="save">Save / share WAV</button></div>
+</section>
+</main>
+
+<dialog id="dlg">
+  <h2>Cloud settings</h2>
+  <label><small>Edge Function URL</small></label>
+  <input type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co/functions/v1/master" autocapitalize="off" spellcheck="false">
+  <label><small>App key (the APP_KEY secret you set)</small></label>
+  <input type="password" id="cfgKey" autocomplete="off">
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cfgCancel">Cancel</button><button class="primary" style="width:auto" id="cfgSave">Save</button></div>
+</dialog>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const state={file:null,src:null,srcStats:null,out:null,outBlob:null,outStats:null,engine:'local',ref:null,spec:null,report:null};
+let AC;const getAC=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
+const cfg=()=>{try{return JSON.parse(localStorage.getItem('mm.cfg'))||{}}catch(e){return{}}};
+// cooperative yield so the UI stays alive during heavy DSP
+const Y=(()=>{let t=performance.now();return async()=>{const n=performance.now();if(n-t>40){await new Promise(r=>setTimeout(r));t=performance.now()}}})();
+const chans=b=>Array.from({length:b.numberOfChannels},(_,c)=>b.getChannelData(c).slice());
+
+/* ================= Loudness (ITU-R BS.1770 / EBU R128 gated) ================= */
+async function bq(x,b0,b1,b2,a1,a2){
+  const n=x.length,y=new Float32Array(n);let z1=0,z2=0;
+  for(let i=0;i<n;i++){const v=x[i],o=b0*v+z1;z1=b1*v-a1*o+z2;z2=b2*v-a2*o;y[i]=o;if((i&32767)===32767)await Y()}
+  return y;
+}
+function kCoefs(fs){
+  let f0=1681.974450955533,G=3.999843853973347,Q=0.7071752369554196,K=Math.tan(Math.PI*f0/fs);
+  const Vh=10**(G/20),Vb=Vh**0.4996667741545416;let a0=1+K/Q+K*K;
+  const sh=[(Vh+Vb*K/Q+K*K)/a0,2*(K*K-Vh)/a0,(Vh-Vb*K/Q+K*K)/a0,2*(K*K-1)/a0,(1-K/Q+K*K)/a0];
+  f0=38.13547087602444;Q=0.5003270373238773;K=Math.tan(Math.PI*f0/fs);a0=1+K/Q+K*K;
+  const hp=[1,-2,1,2*(K*K-1)/a0,(1-K/Q+K*K)/a0];return[sh,hp];
+}
+async function lufs(chs,sr){
+  const use=chs.slice(0,2),n=use[0].length,[sh,hp]=kCoefs(sr),ks=[];
+  for(const x of use)ks.push(await bq(await bq(x,...sh),...hp));
+  const pre=new Float64Array(n+1);
+  for(let i=0;i<n;i++){let s=0;for(const k of ks)s+=k[i]*k[i];pre[i+1]=pre[i]+s;if((i&65535)===65535)await Y()}
+  const bl=Math.round(.4*sr),st=Math.round(.1*sr),blocks=[];
+  for(let s=0;s+bl<=n;s+=st)blocks.push((pre[s+bl]-pre[s])/bl);
+  const L=m=>-0.691+10*Math.log10(m),avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+  let g=blocks.filter(m=>L(m)>-70);if(!g.length)return -Infinity;
+  const rel=L(avg(g))-10;g=g.filter(m=>L(m)>rel);return g.length?L(avg(g)):-Infinity;
+}
+
+/* ================= True peak (4x interpolation, 12-tap windowed sinc) ================= */
+const TP=(()=>{const T=[];for(const f of[.25,.5,.75]){const h=[];let s=0;for(let k=-5;k<=6;k++){const t=k-f,sinc=Math.sin(Math.PI*t)/(Math.PI*t),w=.5*(1+Math.cos(Math.PI*t/6.5));h.push(sinc*w);s+=sinc*w}T.push(h.map(v=>v/s))}return T})();
+function tpAt(chs,i,n,thr){
+  let p=0;
+  for(const c of chs){
+    const a=Math.abs(c[i]);if(a>p)p=a;
+    if(i>=5&&i+6<n&&Math.max(a,Math.abs(c[i+1]))>thr){
+      for(const h of TP){let s=0;for(let j=0;j<12;j++)s+=c[i-5+j]*h[j];s=Math.abs(s);if(s>p)p=s}
+    }
+  }
+  return p;
+}
+async function truePeakDb(chs){
+  const n=chs[0].length;let m=0;
+  for(const c of chs)for(let i=0;i<n;i++){const a=Math.abs(c[i]);if(a>m)m=a}
+  if(!m)return -Infinity;
+  const thr=m*.6;let p=m;
+  for(let i=0;i<n;i++){const v=tpAt(chs,i,n,thr);if(v>p)p=v;if((i&32767)===32767)await Y()}
+  return 20*Math.log10(p);
+}
+
+/* ================= FFT + spectrum analysis ================= */
+function makeFFT(N){
+  const bits=Math.log2(N),rev=new Uint32Array(N),cs=new Float64Array(N/2),sn=new Float64Array(N/2);
+  for(let i=0;i<N;i++){let r=0;for(let b=0;b<bits;b++)if(i&(1<<b))r|=1<<(bits-1-b);rev[i]=r}
+  for(let i=0;i<N/2;i++){cs[i]=Math.cos(2*Math.PI*i/N);sn[i]=-Math.sin(2*Math.PI*i/N)}
+  return(re,im,inv)=>{
+    for(let i=0;i<N;i++){const j=rev[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+    for(let size=2;size<=N;size<<=1){
+      const half=size>>1,step=N/size;
+      for(let i=0;i<N;i+=size)for(let j=0,k=0;j<half;j++,k+=step){
+        const wr=cs[k],wi=inv?-sn[k]:sn[k],a=i+j,b=a+half,tr=re[b]*wr-im[b]*wi,ti=re[b]*wi+im[b]*wr;
+        re[b]=re[a]-tr;im[b]=im[a]-ti;re[a]+=tr;im[a]+=ti;
+      }
+    }
+  };
+}
+// 1/3-octave bands, 31 Hz .. 16 kHz
+const BANDS=[];for(let i=-15;i<=12;i++){const fc=1000*2**(i/3);BANDS.push({fc,lo:fc*2**(-1/6),hi:fc*2**(1/6)})}
+async function analyzeSpectrum(chs,sr){
+  const N=8192,fft=makeFFT(N),win=new Float64Array(N);
+  for(let i=0;i<N;i++)win[i]=.5-.5*Math.cos(2*Math.PI*i/N);
+  const n=chs[0].length,nc=chs.length,hop=N/2,re=new Float64Array(N),im=new Float64Array(N),pw=new Float64Array(N/2+1);
+  let frames=0,f=0;
+  for(let s=0;s+N<=n;s+=hop,f++){
+    let e=0;
+    for(let i=0;i<N;i++){let m=0;for(let c=0;c<nc;c++)m+=chs[c][s+i];m/=nc;re[i]=m*win[i];im[i]=0;e+=m*m}
+    if(e/N<3e-7)continue; // skip near-silence (~ -65 dBFS)
+    fft(re,im,false);for(let k=0;k<=N/2;k++)pw[k]+=re[k]*re[k]+im[k]*im[k];frames++;
+    if((f&15)===0)await Y();
+  }
+  if(!frames)throw new Error('Track is too short or too quiet to analyze.');
+  const binHz=sr/N;
+  return BANDS.map(b=>{
+    let sum=0,cnt=0;
+    for(let k=Math.max(1,Math.ceil(b.lo/binHz));k<=Math.min(N/2,Math.floor(b.hi/binHz));k++){sum+=pw[k];cnt++}
+    if(!cnt){const k=clamp(Math.round(b.fc/binHz),1,N/2);sum=pw[k]}
+    return 10*Math.log10(sum/frames+1e-20);
+  });
+}
+
+/* ================= Auto-EQ (linear-phase STFT EQ) ================= */
+function targetCurve(fc,tone){
+  let t=fc>=200?-3.2*Math.log2(fc/1000):-3.2*Math.log2(.2)-1.0*Math.log2(200/fc);
+  if(fc<45)t-=6*Math.log2(45/fc);
+  if(tone==='warm'){if(fc<200)t+=1.5;if(fc>6000)t-=1.2}
+  if(tone==='bright'){if(fc>5000)t+=1.5;if(fc<150)t-=1}
+  if(tone==='bass'){if(fc<150)t+=3}
+  return t;
+}
+function computeEQ(levels,target,strength,maxDb){
+  const mid=BANDS.map((b,i)=>b.fc>=250&&b.fc<=4000?i:-1).filter(i=>i>=0);
+  const off=mean(mid.map(i=>levels[i]-target[i]));
+  let d=BANDS.map((b,i)=>target[i]+off-levels[i]);
+  d=d.map((v,i)=>.25*(d[i-1]??v)+.5*v+.25*(d[i+1]??v));
+  d=d.map(v=>Math.sign(v)*Math.max(0,Math.abs(v)-.7)); // dead zone: leave small deviations alone
+  d=d.map((v,i)=>{let x=clamp(v*strength,-maxDb,maxDb);const fc=BANDS[i].fc;if(fc<40)x=Math.min(x,0);if(fc>12000)x=Math.min(x,2.5);return x});
+  return d;
+}
+function eqCurve(d){
+  const lf=BANDS.map(b=>Math.log2(b.fc)),L=lf.length;
+  return hz=>{const t=Math.log2(Math.max(hz,1));if(t<=lf[0])return d[0];if(t>=lf[L-1])return d[L-1];let j=1;while(lf[j]<t)j++;const u=(t-lf[j-1])/(lf[j]-lf[j-1]);return d[j-1]*(1-u)+d[j]*u};
+}
+async function specEQ(chs,sr,d,N=4096){
+  const hop=N/4,fft=makeFFT(N),n=chs[0].length,nc=chs.length,curve=eqCurve(d);
+  const sw=new Float64Array(N);for(let i=0;i<N;i++)sw[i]=Math.sqrt(.5-.5*Math.cos(2*Math.PI*i/N));
+  const G=new Float64Array(N);
+  for(let k=0;k<=N/2;k++){
+    const hz=k*sr/N,u=clamp((hz-18)/14,0,1),sub=u*u*(3-2*u); // subsonic high-pass 18-32 Hz
+    const g=10**(curve(hz)/20)*sub;G[k]=g;if(k>0&&k<N/2)G[N-k]=g;
+  }
+  const out=chs.map(()=>new Float32Array(n)),re=new Float64Array(N),im=new Float64Array(N),sc=1/(2*N);
+  for(let c=0;c<nc;c+=2){
+    const L=chs[c],R=chs[c+1],oL=out[c],oR=out[c+1];
+    for(let s=-(N-hop),f=0;s<n;s+=hop,f++){
+      for(let i=0;i<N;i++){const idx=s+i;if(idx>=0&&idx<n){re[i]=L[idx]*sw[i];im[i]=R?R[idx]*sw[i]:0}else{re[i]=0;im[i]=0}}
+      fft(re,im,false);for(let k=0;k<N;k++){re[k]*=G[k];im[k]*=G[k]}fft(re,im,true);
+      for(let i=0;i<N;i++){const idx=s+i;if(idx>=0&&idx<n){oL[idx]+=re[i]*sw[i]*sc;if(R)oR[idx]+=im[i]*sw[i]*sc}}
+      if((f&15)===0)await Y();
+    }
+  }
+  return out;
+}
+
+/* ================= Multiband dynamics (LR4 crossovers) ================= */
+function lrC(type,fc,sr){
+  const w=2*Math.PI*fc/sr,c=Math.cos(w),s=Math.sin(w),Q=Math.SQRT1_2,al=s/(2*Q),a0=1+al;
+  const b=type==='lp'?[(1-c)/2,1-c,(1-c)/2]:[(1+c)/2,-(1+c),(1+c)/2];
+  return[b[0]/a0,b[1]/a0,b[2]/a0,-2*c/a0,(1-al)/a0];
+}
+async function lr4(x,co){ // two cascaded Butterworth sections = Linkwitz-Riley 4th order
+  const n=x.length,y=new Float32Array(n),[b0,b1,b2,a1,a2]=co;let p1=0,p2=0,q1=0,q2=0;
+  for(let i=0;i<n;i++){
+    const v=x[i],o=b0*v+p1;p1=b1*v-a1*o+p2;p2=b2*v-a2*o;
+    const o2=b0*o+q1;q1=b1*o-a1*o2+q2;q2=b2*o-a2*o2;y[i]=o2;
+    if((i&32767)===32767)await Y();
+  }
+  return y;
+}
+async function compressBand(sigs,sr,p,dyn){
+  const nc=sigs.length,n=sigs[0].length,ratio=1+(p.ratio-1)*dyn;
+  if(ratio<1.01)return{avg:0,max:0};
+  // auto threshold from the band's own loudness distribution (300 ms blocks)
+  const bl=Math.round(.3*sr),lv=[];
+  for(let s=0;s+bl<=n;s+=bl){let e=0;for(let c=0;c<nc;c++){const x=sigs[c];for(let i=s;i<s+bl;i++)e+=x[i]*x[i]}lv.push(10*Math.log10(e/(bl*nc)+1e-12));await Y()}
+  const act=lv.filter(v=>v>-60).sort((a,b)=>a-b);if(!act.length)return{avg:0,max:0};
+  const thr=act[Math.floor(act.length*.75)]-1,slope=1/ratio-1,knee=6;
+  const ap=Math.exp(-1/(sr*.010)),ka=Math.exp(-1/(sr*p.att)),kr=Math.exp(-1/(sr*p.rel));
+  let pw=0,gs=0,sum=0,cnt=0,mx=0;
+  for(let i=0;i<n;i++){
+    let e=0;for(let c=0;c<nc;c++){const v=sigs[c][i];e+=v*v}
+    pw=ap*pw+(1-ap)*(e/nc);
+    const over=10*Math.log10(pw+1e-12)-thr;let gr=0;
+    if(2*over>knee)gr=slope*over;else if(2*over>-knee)gr=slope*(over+knee/2)**2/(2*knee);
+    if(gr<-6)gr=-6;
+    gs=gr<gs?ka*gs+(1-ka)*gr:kr*gs+(1-kr)*gr;
+    const g=10**(gs/20);for(let c=0;c<nc;c++)sigs[c][i]*=g;
+    if(gs<-.1){sum+=gs;cnt++}if(gs<mx)mx=gs;
+    if((i&32767)===32767)await Y();
+  }
+  return{avg:cnt?sum/cnt:0,max:mx};
+}
+async function multiband(chs,sr,o){
+  const nc=chs.length,n=chs[0].length,F1=140,F2=3200;
+  const lp1=lrC('lp',F1,sr),hp1=lrC('hp',F1,sr),lp2=lrC('lp',F2,sr),hp2=lrC('hp',F2,sr);
+  const h1=[];for(let c=0;c<nc;c++)h1.push(await lr4(chs[c],hp1));
+  const mids=[],highs=[];
+  for(let c=0;c<nc;c++){mids.push(await lr4(h1[c],lp2));highs.push(await lr4(h1[c],hp2))}
+  h1.length=0;
+  const gMid=await compressBand(mids,sr,{ratio:1.8,att:.02,rel:.15},o.dyn);
+  const gHigh=await compressBand(highs,sr,{ratio:1.6,att:.01,rel:.10},o.dyn);
+  const out=chs.map((_,c)=>{const m=mids[c],h=highs[c];for(let i=0;i<n;i++)m[i]+=h[i];return m});
+  highs.length=0;
+  if(nc>=2&&Math.abs(o.width-1)>.01){
+    const w=o.width,L=out[0],R=out[1];
+    for(let i=0;i<n;i++){const m=(L[i]+R[i])/2,s=(L[i]-R[i])/2*w;L[i]=m+s;R[i]=m-s}
+  }
+  const lows=[];
+  for(let c=0;c<nc;c++){ // low band passes through the f2 all-pass (LP2+HP2) so the bands sum flat
+    const l=await lr4(chs[c],lp1),a=await lr4(l,lp2),b=await lr4(l,hp2);
+    for(let i=0;i<n;i++)a[i]+=b[i];lows.push(a);
+  }
+  const gLow=await compressBand(lows,sr,{ratio:2.0,att:.03,rel:.20},o.dyn);
+  if(o.monoBass&&nc>=2){const L=lows[0],R=lows[1];for(let i=0;i<n;i++){const m=(L[i]+R[i])/2;L[i]=m;R[i]=m}}
+  for(let c=0;c<nc;c++){const a=out[c],l=lows[c];for(let i=0;i<n;i++)a[i]+=l[i]}
+  return{chs:out,gr:{low:gLow,mid:gMid,high:gHigh}};
+}
+
+/* ================= Limiter (lookahead, optional true-peak detection) ================= */
+async function limitCore(chs,sr,ceil,tp,lookMs=5,relMs=150){
+  const n=chs[0].length,N=Math.max(2,Math.round(sr*lookMs/1000)),g=new Float32Array(n),thr=ceil*.5;
+  for(let i=0;i<n;i++){
+    let p;if(tp)p=tpAt(chs,i,n,thr);else{p=0;for(const c of chs){const a=Math.abs(c[i]);if(a>p)p=a}}
+    g[i]=p>ceil?ceil/p:1;if((i&32767)===32767)await Y();
+  }
+  const m=new Float32Array(n),dq=new Int32Array(n);let h=0,t=0;
+  for(let j=n-1;j>=0;j--){while(t>h&&g[dq[t-1]]>=g[j])t--;dq[t++]=j;while(dq[h]>j+N-1)h++;m[j]=g[dq[h]];if((j&32767)===0)await Y()}
+  const pre=new Float64Array(n+1);for(let i=0;i<n;i++)pre[i+1]=pre[i]+m[i];
+  const rc=1-Math.exp(-1/(sr*relMs/1000));let r=1,minG=1;
+  for(let i=0;i<n;i++){
+    const a=Math.max(0,i-N+1),s=(pre[i+1]-pre[a])/(i+1-a);
+    r=Math.min(s,r+(1-r)*rc);g[i]=r;if(r<minG)minG=r;if((i&32767)===32767)await Y();
+  }
+  for(const c of chs)for(let i=0;i<n;i++)c[i]*=g[i];
+  return -20*Math.log10(minG);
+}
+
+/* ================= On-device mastering pipeline ================= */
+async function masterLocal(buf,o,prog){
+  const sr=buf.sampleRate;let x=chans(buf);
+  prog('Analyzing tone…',.04);
+  const lvIn=await analyzeSpectrum(x,sr);
+  let tgtLv,tgtLufs=o.target;
+  if(o.tone==='ref'){
+    if(!o.ref)throw new Error('Choose a reference track first.');
+    tgtLv=o.ref.levels;if(o.useRefLoud&&isFinite(o.ref.lufs))tgtLufs=clamp(o.ref.lufs,-20,-6);
+  }else tgtLv=BANDS.map(b=>targetCurve(b.fc,o.tone));
+  const eq=computeEQ(lvIn,tgtLv,o.eqStrength,o.tone==='ref'?6:4);
+  prog('Linear-phase EQ…',.12);x=await specEQ(x,sr,eq);
+  prog('Multiband dynamics…',.35);const mb=await multiband(x,sr,o);x=mb.chs;
+  prog('Measuring loudness…',.6);const l0=await lufs(x,sr);
+  if(!isFinite(l0))throw new Error('That track looks silent.');
+  const ceil=10**(o.ceiling/20);let gdb=tgtLufs-l0,out,lim=0;
+  for(let it=0;it<4;it++){
+    prog(`Setting level and limiting (pass ${it+1})…`,.64+it*.06);
+    const g=10**(gdb/20);out=x.map(ch=>{const y=new Float32Array(ch.length);for(let j=0;j<ch.length;j++)y[j]=ch[j]*g;return y});
+    lim=await limitCore(out,sr,ceil,false);
+    const err=tgtLufs-await lufs(out,sr);if(!isFinite(err)||Math.abs(err)<.2)break;gdb+=err;
+  }
+  prog('True-peak limiting…',.92);
+  lim=Math.max(lim,await limitCore(out,sr,ceil*.994,true));
+  return{chs:out,sr,report:{eq,gr:mb.gr,gain:gdb,lim,tgtLv,tgtLufs}};
+}
+
+/* ================= WAV encode ================= */
+function toWav(chs,sr,bits){
+  const nc=chs.length,n=chs[0].length,bps=bits/8,dl=n*nc*bps,ab=new ArrayBuffer(44+dl),v=new DataView(ab);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  w(0,'RIFF');v.setUint32(4,36+dl,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*nc*bps,true);v.setUint16(32,nc*bps,true);v.setUint16(34,bits,true);w(36,'data');v.setUint32(40,dl,true);
+  let o=44;const max=bits===16?32767:8388607;
+  for(let i=0;i<n;i++)for(let c=0;c<nc;c++){
+    let s=chs[c][i];if(bits===16)s+=(Math.random()-Math.random())/32768;
+    s=Math.max(-1,Math.min(1,s));const q=Math.round(s*max);
+    if(bits===16){v.setInt16(o,q,true);o+=2}else{v.setUint8(o,q&255);v.setUint8(o+1,(q>>8)&255);v.setUint8(o+2,(q>>16)&255);o+=3}
+  }
+  return new Blob([ab],{type:'audio/wav'});
+}
+
+/* ================= Cloud (your Edge Function) ================= */
+function xhrStart(url,key,file,opts,onUp){
+  return new Promise((res,rej)=>{
+    const x=new XMLHttpRequest(),fd=new FormData();fd.append('file',file,file.name);fd.append('opts',JSON.stringify(opts));
+    x.open('POST',url+'?action=start');x.setRequestHeader('x-app-key',key);
+    x.upload.onprogress=e=>e.lengthComputable&&onUp(e.loaded/e.total);
+    x.onload=()=>{try{const j=JSON.parse(x.responseText);x.status<300?res(j):rej(new Error(j.error||x.status))}catch(e){rej(new Error('Bad response ('+x.status+')'))}};
+    x.onerror=()=>rej(new Error('Network error reaching the Edge Function'));x.send(fd);
+  });
+}
+async function masterCloud(file,o,prog){
+  const{url,key}=cfg();if(!url||!key)throw new Error('Add your Edge Function URL and app key in ⚙︎ first.');
+  prog('Uploading…',.05);
+  const{id}=await xhrStart(url,key,file,{target:o.target,ceiling:o.ceiling,autoeq:o.autoeq},p=>prog(`Uploading… ${Math.round(p*100)}%`,.05+p*.3));
+  for(;;){
+    await new Promise(r=>setTimeout(r,4000));
+    const r=await fetch(`${url}?action=status&id=${encodeURIComponent(id)}`,{headers:{'x-app-key':key}});
+    const j=await r.json();if(!r.ok)throw new Error(j.error||'Status check failed');
+    if(j.error)throw new Error(j.error);
+    prog(j.status_string||'Processing…',.5);
+    if(j.done)break;
+  }
+  prog('Downloading master…',.85);
+  const r=await fetch(`${url}?action=download&id=${encodeURIComponent(id)}`,{headers:{'x-app-key':key}});
+  if(!r.ok)throw new Error('Download failed ('+r.status+')');
+  const blob=await r.blob();
+  const buf=await getAC().decodeAudioData(await blob.arrayBuffer());
+  return{chs:chans(buf),sr:buf.sampleRate,blob};
+}
+
+/* ================= UI ================= */
+const fmtT=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const fmtL=v=>isFinite(v)?v.toFixed(1)+' LUFS':'—',fmtP=v=>isFinite(v)?v.toFixed(1)+' dBTP':'—';
+const msg=(t,err)=>{const m=$('#msg');m.textContent=t;m.className='msg'+(err?' err':'')};
+const prog=(t,f)=>{msg(t);if(f!=null)$('#bar').style.width=(f*100)+'%'};
+
+async function loadFile(f){
+  if(!f)return;state.file=f;$('#res').classList.add('hide');stopPlay();$('#go').disabled=true;
+  $('#dropTxt').innerHTML=`<b>${f.name.replace(/</g,'&lt;')}</b><br><small>${(f.size/1048576).toFixed(1)} MB</small>`;
+  try{
+    msg('Reading file…');state.src=await getAC().decodeAudioData(await f.arrayBuffer());
+    const c=chans(state.src);msg('Measuring…');
+    state.srcStats={l:await lufs(c,state.src.sampleRate),p:await truePeakDb(c)};
+    $('#srcStats').classList.remove('hide');$('#s0l').textContent=fmtL(state.srcStats.l);$('#s0p').textContent=fmtP(state.srcStats.p);$('#s0d').textContent=fmtT(state.src.duration);
+    $('#go').disabled=false;msg('');
+  }catch(e){state.src=null;msg('Could not decode that file. Try WAV, FLAC or MP3.',true)}
+}
+async function loadRef(f){
+  if(!f)return;$('#refTxt').innerHTML=`<b>${f.name.replace(/</g,'&lt;')}</b><br><small>Analyzing…</small>`;
+  try{
+    const b=await getAC().decodeAudioData(await f.arrayBuffer()),c=chans(b);
+    state.ref={name:f.name,levels:await analyzeSpectrum(c,b.sampleRate),lufs:await lufs(c,b.sampleRate)};
+    $('#refTxt').innerHTML=`<b>${f.name.replace(/</g,'&lt;')}</b><br><small>${fmtL(state.ref.lufs)}</small>`;
+  }catch(e){state.ref=null;$('#refTxt').innerHTML='<b>Could not read that reference</b><br><small>Try WAV, FLAC or MP3</small>'}
+}
+$('#file').onchange=e=>loadFile(e.target.files[0]);
+$('#refFile').onchange=e=>loadRef(e.target.files[0]);
+const drop=$('#drop');
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>loadFile(e.dataTransfer.files[0]));
+
+const bindRange=(id,out,fmt)=>{const el=$('#'+id),u=()=>$('#'+out).textContent=fmt(+el.value);el.oninput=u;u()};
+bindRange('tgt','tgtO',v=>v.toFixed(1)+' LUFS');bindRange('ceil','ceilO',v=>v.toFixed(1)+' dBTP');
+bindRange('eqStr','eqO',v=>v+'%');bindRange('dyn','dynO',v=>v+'%');bindRange('width','widO',v=>v+'%');
+$('#chips').onclick=e=>{const v=e.target.dataset?.v;if(v){$('#tgt').value=v;$('#tgt').dispatchEvent(new Event('input'))}};
+$('#tone').onchange=()=>$('#refRow').classList.toggle('hide',$('#tone').value!=='ref');
+const setEngine=e=>{state.engine=e;$('#eLocal').classList.toggle('on',e==='local');$('#eCloud').classList.toggle('on',e==='cloud');
+  $('#localOpts').classList.toggle('hide',e!=='local');$('#cloudOpts').classList.toggle('hide',e!=='cloud')};
+$('#eLocal').onclick=()=>setEngine('local');$('#eCloud').onclick=()=>setEngine('cloud');
+
+$('#go').onclick=async()=>{
+  if(!state.src)return;stopPlay();$('#go').disabled=true;$('#bar').style.width='2%';
+  const o={target:+$('#tgt').value,ceiling:+$('#ceil').value,tone:$('#tone').value,eqStrength:$('#eqStr').value/100,dyn:$('#dyn').value/100,
+    width:$('#width').value/100,monoBass:$('#monoBass').checked,useRefLoud:$('#refLoud').checked,ref:state.ref,autoeq:$('#autoeq').checked};
+  try{
+    const r=state.engine==='local'?await masterLocal(state.src,o,prog):await masterCloud(state.file,o,prog);
+    const bits=+$('#bits').value;
+    prog('Analyzing result…',.96);
+    const ab=getAC().createBuffer(r.chs.length,r.chs[0].length,r.sr);r.chs.forEach((c,i)=>ab.copyToChannel(c,i));
+    state.out=ab;state.outStats={l:await lufs(r.chs,r.sr),p:await truePeakDb(r.chs)};
+    state.spec={inLv:await analyzeSpectrum(chans(state.src),state.src.sampleRate),outLv:await analyzeSpectrum(r.chs,r.sr),tgt:r.report?.tgtLv||null};
+    state.report=r.report||null;
+    state.outBlob=r.blob||toWav(r.chs,r.sr,bits);
+    $('#bar').style.width='100%';msg('Done.');showResult();
+  }catch(e){msg(e.message||String(e),true);$('#bar').style.width='0'}
+  $('#go').disabled=false;
+};
+
+/* ---------- A/B player ---------- */
+const P={which:'B',playing:false,node:null,gain:null,startedAt:0,offset:0,raf:0};
+const curBuf=()=>P.which==='A'?state.src:state.out;
+function matchGain(){ // bring the louder side down to the quieter one
+  if(!$('#match').checked||!isFinite(state.srcStats.l)||!isFinite(state.outStats.l))return 1;
+  const diff=state.outStats.l-state.srcStats.l;
+  return 10**((P.which==='A'?Math.min(0,diff):Math.min(0,-diff))/20);
+}
+const pos=()=>P.playing?Math.min(curBuf().duration,getAC().currentTime-P.startedAt):P.offset;
+function startPlay(){
+  const ac=getAC();if(ac.state==='suspended')ac.resume();
+  const n=ac.createBufferSource(),g=ac.createGain();n.buffer=curBuf();g.gain.value=matchGain();n.connect(g).connect(ac.destination);
+  n.onended=()=>{if(P.node===n&&pos()>=curBuf().duration-.05){P.playing=false;P.offset=0;ui()}};
+  n.start(0,P.offset);P.node=n;P.gain=g;P.startedAt=ac.currentTime-P.offset;P.playing=true;ui();loop();
+}
+function stopPlay(){if(P.node){P.node.onended=null;try{P.node.stop()}catch(e){}}if(P.playing)P.offset=pos();P.playing=false;P.node=null;ui()}
+function ui(){$('#play').textContent=P.playing?'❚❚':'▶︎';$('#bA').classList.toggle('on',P.which==='A');$('#bB').classList.toggle('on',P.which==='B')}
+function loop(){cancelAnimationFrame(P.raf);const f=()=>{const b=curBuf();if(!b)return;$('#seek').value=(pos()/b.duration)*1000;$('#time').textContent=fmtT(pos());if(P.playing)P.raf=requestAnimationFrame(f)};f()}
+$('#play').onclick=()=>P.playing?(stopPlay(),loop()):startPlay();
+function swap(w){if(P.which===w)return;const was=P.playing,o=pos();stopPlay();P.which=w;P.offset=o;ui();was?startPlay():loop()}
+$('#bA').onclick=()=>swap('A');$('#bB').onclick=()=>swap('B');
+$('#match').onchange=()=>{if(P.gain)P.gain.gain.value=matchGain()};
+$('#seek').oninput=e=>{const was=P.playing;stopPlay();P.offset=(e.target.value/1000)*curBuf().duration;was?startPlay():loop()};
+
+/* ---------- plots + report ---------- */
+function drawWave(){
+  const cv=$('#wave'),x=cv.getContext('2d'),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);
+  const draw=(buf,col,alpha)=>{const d=buf.getChannelData(0),step=Math.floor(d.length/W)||1;x.fillStyle=col;x.globalAlpha=alpha;
+    for(let i=0;i<W;i++){let mx=0;for(let j=0;j<step;j+=Math.max(1,step>>5)){const a=Math.abs(d[i*step+j]||0);if(a>mx)mx=a}
+      const h=Math.max(1,mx*H*.95);x.fillRect(i,(H-h)/2,1,h)}};
+  draw(state.src,'#8a93a6',.55);draw(state.out,'#ffb347',.85);x.globalAlpha=1;
+}
+function drawSpec(){
+  const cv=$('#spec'),x=cv.getContext('2d'),W=cv.width,H=cv.height,S=state.spec;x.clearRect(0,0,W,H);
+  const midIdx=BANDS.map((b,i)=>b.fc>=250&&b.fc<=4000?i:-1).filter(i=>i>=0);
+  const rel=lv=>{const o=mean(midIdx.map(i=>lv[i]));return lv.map(v=>v-o)};
+  const lo=Math.log2(BANDS[0].fc),hi=Math.log2(BANDS[BANDS.length-1].fc),yMin=-24,yMax=14,padL=34,padB=18;
+  const X=fc=>padL+(Math.log2(fc)-lo)/(hi-lo)*(W-padL-8),Yp=v=>(1-(clamp(v,yMin,yMax)-yMin)/(yMax-yMin))*(H-padB-6)+4;
+  x.strokeStyle='#262c38';x.fillStyle='#8a93a6';x.font='20px system-ui';x.lineWidth=1;x.setLineDash([]);
+  for(const f of[100,1000,10000]){x.beginPath();x.moveTo(X(f),4);x.lineTo(X(f),H-padB);x.stroke();x.fillText(f>=1000?f/1000+'k':f,X(f)-10,H-2)}
+  for(const v of[-20,-10,0,10]){x.beginPath();x.moveTo(padL,Yp(v));x.lineTo(W-8,Yp(v));x.stroke();x.fillText(v,2,Yp(v)+6)}
+  const line=(lv,col,dash,w)=>{x.beginPath();x.strokeStyle=col;x.lineWidth=w;x.setLineDash(dash);lv.forEach((v,i)=>{const px=X(BANDS[i].fc),py=Yp(v);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.setLineDash([])};
+  if(S.tgt)line(rel(S.tgt),'#5ad19a',[8,6],3);
+  line(rel(S.inLv),'#8a93a6',[],3);line(rel(S.outLv),'#ffb347',[],4);
+  $('#legT').classList.toggle('hide',!S.tgt);
+}
+function renderReport(){
+  const R=state.report,el=$('#report');
+  if(!R){el.innerHTML='';return}
+  const fh=f=>f>=1000?(f/1000).toFixed(f>=10000?0:1)+' kHz':Math.round(f)+' Hz';
+  const moves=BANDS.map((b,i)=>({f:b.fc,d:R.eq[i]})).filter(m=>Math.abs(m.d)>=.8).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)).slice(0,6).sort((a,b)=>a.f-b.f);
+  const sg=v=>(v>0?'+':'')+v.toFixed(1);
+  const g=R.gr;
+  el.innerHTML=
+    `<b>Auto-EQ:</b> ${moves.length?moves.map(m=>`${fh(m.f)} ${sg(m.d)} dB`).join(' · '):'tone already close to target, no moves needed'}<br>`+
+    `<b>Dynamics (avg reduction when active):</b> low ${(-g.low.avg).toFixed(1)} dB · mid ${(-g.mid.avg).toFixed(1)} dB · high ${(-g.high.avg).toFixed(1)} dB<br>`+
+    `<b>Level:</b> ${sg(R.gain)} dB to reach ${R.tgtLufs.toFixed(1)} LUFS · <b>Limiter</b> max reduction ${R.lim.toFixed(1)} dB`;
+}
+function showResult(){
+  $('#res').classList.remove('hide');P.which='B';P.offset=0;
+  $('#r0l').textContent=fmtL(state.srcStats.l);$('#r0p').textContent=fmtP(state.srcStats.p);
+  $('#r1l').textContent=fmtL(state.outStats.l);$('#r1p').textContent=fmtP(state.outStats.p);
+  drawWave();drawSpec();renderReport();ui();loop();$('#res').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('#save').onclick=async()=>{
+  const name=(state.file.name.replace(/\.[^.]+$/,'')||'track')+'_master.wav',f=new File([state.outBlob],name,{type:'audio/wav'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4e4);
+};
+
+/* settings */
+$('#gear').onclick=()=>{const c=cfg();$('#cfgUrl').value=c.url||'';$('#cfgKey').value=c.key||'';$('#dlg').showModal()};
+$('#cfgCancel').onclick=()=>$('#dlg').close();
+$('#cfgSave').onclick=()=>{localStorage.setItem('mm.cfg',JSON.stringify({url:$('#cfgUrl').value.trim().replace(/\/$/,''),key:$('#cfgKey').value}));$('#dlg').close()};
+
+if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
