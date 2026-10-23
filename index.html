@@ -162,7 +162,9 @@ const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
 const state={file:null,src:null,srcStats:null,out:null,outBlob:null,outStats:null,engine:'local',ref:null,spec:null,report:null};
-let AC;const getAC=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
+let AC;const getAC=()=>{if(AC)return AC;const C=window.AudioContext||window.webkitAudioContext;
+  try{AC=new C({sampleRate:44100})}catch(e){AC=new C()} // decode + render + export all run at 44.1 kHz
+  return AC};
 const cfg=()=>{try{return JSON.parse(localStorage.getItem('mm.cfg'))||{}}catch(e){return{}}};
 // cooperative yield so the UI stays alive during heavy DSP
 const Y=(()=>{let t=performance.now();return async()=>{const n=performance.now();if(n-t>40){await new Promise(r=>setTimeout(r));t=performance.now()}}})();
@@ -506,7 +508,7 @@ $('#go').onclick=async()=>{
     state.spec={inLv:await analyzeSpectrum(chans(state.src),state.src.sampleRate),outLv:await analyzeSpectrum(r.chs,r.sr),tgt:r.report?.tgtLv||null};
     state.report=r.report||null;
     state.outBlob=r.blob||toWav(r.chs,r.sr,bits);
-    $('#bar').style.width='100%';msg('Done.');showResult();
+    $('#bar').style.width='100%';msg(`Done. Exporting ${r.sr} Hz${r.sr!==44100?' (your browser would not allow 44.1 kHz)':''}.`);showResult();
   }catch(e){msg(e.message||String(e),true);$('#bar').style.width='0'}
   $('#go').disabled=false;
 };
